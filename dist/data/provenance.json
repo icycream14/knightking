@@ -1,0 +1,12 @@
+{
+  "source": "왕의기사Zero_2.17ver.scx",
+  "sha256": "9397e2280842a5b34ed1201b59da3479554e3e63f83fcf24f52cc496dadb1f13",
+  "author": "Nyx)..UELTER",
+  "tiles": 65536,
+  "units": 937,
+  "triggers": 3009,
+  "regions": 245,
+  "graphics": "https://github.com/dada78641/bwmapgfx",
+  "unitMapping": "https://github.com/ShieldBattery/bw-chk",
+  "completeOriginalLogic": false
+}

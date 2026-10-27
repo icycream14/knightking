@@ -1,0 +1,22 @@
+'use strict';
+const fs=require('node:fs'),assert=require('node:assert/strict'),cp=require('node:child_process');
+const id=JSON.parse(fs.readFileSync('PROJECT_IDENTITY.json'));
+const hosting=JSON.parse(fs.readFileSync('.openai/hosting.json'));
+assert.equal(id.game,'왕의기사Zero');
+assert.equal(id.github,'https://github.com/icycream14/knightking.git');
+assert.equal(id.sites_project_id,'appgprj_6adb8acf6e188191a8e9a1b63983726f');
+assert.equal(hosting.project_id,id.sites_project_id);
+assert.equal(hosting.static.directory,'dist');
+const game=fs.readFileSync(id.runtime,'utf8'),html=fs.readFileSync('dist/index.html','utf8');
+assert(game.includes("SAVE='"+id.save_key+"'"));
+assert(game.includes('왕의기사 Zero'));
+assert(html.includes('왕의기사 Zero'));
+for(const text of [game,html])assert(!/SSS급|회귀 기사|knight-js-save|appgprj_6ac25a5c95a0819194201d77b169f20c/.test(text),'foreign game content');
+const args=process.argv.slice(2);
+for(let i=0;i<args.length;i+=2){assert(i+1<args.length,'missing target');if(args[i]==='--site')assert.equal(args[i+1],id.sites_project_id,'wrong deployment target');else if(args[i]==='--remote'){const url=args[i+1];assert(url==='https://github.com/icycream14/knightking.git'||url==='https://github.com/icycream14/knightking'||url==='git@github.com:icycream14/knightking.git'||url.startsWith('https://git.chatgpt-team.site/'),'wrong repository target')}else throw Error('unknown target flag')}
+JSON.parse(fs.readFileSync('dist/data/world.json'));
+assert(fs.statSync(id.source_map).size>0);
+assert(fs.statSync('dist/data/walkability.bin').size>0);
+const urls=cp.execFileSync('git',['remote','-v'],{encoding:'utf8'}).split('\n').filter(x=>x.includes('github.com'));
+for(const url of urls)assert(url.includes('github.com/icycream14/knightking'),'foreign GitHub remote');
+console.log('PASS: Zero repository, hosting identity, save key, runtime and original map are isolated.');

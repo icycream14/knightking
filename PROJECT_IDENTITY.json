@@ -1,0 +1,10 @@
+{
+  "game": "왕의기사Zero",
+  "github": "https://github.com/icycream14/knightking.git",
+  "branch": "main",
+  "sites_project_id": "appgprj_6adb8acf6e188191a8e9a1b63983726f",
+  "production_url": "https://kings-knight-zero-solo.super-soldier.chatgpt.site",
+  "save_key": "kings-knight-zero-solo-v1",
+  "source_map": "map-source/original.scx",
+  "runtime": "dist/game.js"
+}
