@@ -51,17 +51,16 @@ class ScxTriggerRuntime {
     if(query>=18&&query<=21)return (this.forceMembers[query-18]||[]).includes(owner);
     if(query===26)return owner<8;if(query===27)return owner>=8&&owner<=11;
     return owner===query;}
-  matchesType(u,type){if(type===228)return true;if(type===229)return !BUILDINGS.has(u.type);
-    if(type===230)return BUILDINGS.has(u.type);
-    if(type===231)return BUILDINGS.has(u.type)&&u.type>=106&&u.type<=165;
-    return u.type===type;}
+  // CHK macro IDs: None 228, Any Unit 229, Men 230, Buildings 231, Factories 232.
+  // https://github.com/bwapi/bwapi/blob/main/bwapi/include/BWAPI/UnitType.h
+  matchesType(u,type){if(type===228)return false;if(type===229)return true;if(type===230)return !BUILDINGS.has(u.type);if(type===231)return BUILDINGS.has(u.type);if(type===232)return [106,111,113,114,131,132,133,154,155,160,167].includes(u.type);return u.type===type;}
   inLoc(u,loc){if(!loc||loc.id===64||loc.id===0)return true;
     let [left,top,right,bottom]=loc.bounds||[0,0,8192,8192];if(left>right)[left,right]=[right,left];if(top>bottom)[top,bottom]=[bottom,top];
     return u.x>=left&&u.x<=right&&u.y>=top&&u.y<=bottom;}
   loc(id){return id===64||id===0?{id,bounds:[0,0,8192,8192]}:this.locations.get(id);}
   invalidateUnits(){this.ownerPools.clear();this.queryCache.clear();this.liveVersion++;}
-  unitPool(type){if(!this.typeIndex){this.typeIndex=new Map([[228,[]],[229,[]],[230,[]],[231,[]]]);for(const u of this.units){if(u.hp<=0||u.alive===false)continue;this.indexUnit(u);}}return this.typeIndex.get(type)||[];}
-  indexUnit(u){let keys=[u.type,228,BUILDINGS.has(u.type)?230:229];if(BUILDINGS.has(u.type)&&u.type>=106&&u.type<=165)keys.push(231);for(let key of keys){let a=this.typeIndex.get(key);if(!a)this.typeIndex.set(key,a=[]);a.push(u);}}
+  unitPool(type){if(!this.typeIndex){this.typeIndex=new Map([[229,[]],[230,[]],[231,[]],[232,[]]]);for(const u of this.units){if(u.hp<=0||u.alive===false)continue;this.indexUnit(u);}}return this.typeIndex.get(type)||[];}
+  indexUnit(u){let keys=[u.type,229,BUILDINGS.has(u.type)?231:230];if(this.matchesType(u,232))keys.push(232);for(let key of keys){let a=this.typeIndex.get(key);if(!a)this.typeIndex.set(key,a=[]);a.push(u);}}
   queryOwners(p,cur){if(p===13)return [cur];if(p>=0&&p<12)return [p];let result=[];for(let owner=0;owner<12;owner++)if(this.belongs(owner,p,cur))result.push(owner);return result;}
   ownerPool(type){let owners=this.ownerPools.get(type);if(!owners){owners=new Map();owners.order=new Map();let ordinal=0;for(let u of this.unitPool(type)){owners.order.set(u,ordinal++);if(u.hp<=0||u.alive===false)continue;let list=owners.get(u.owner);if(!list)owners.set(u.owner,list=[]);list.push(u);}this.ownerPools.set(type,owners);}return owners;}
   unitsAt(p,type,locId,cur){const key='units:'+(p===13?cur:p)+':'+type+':'+locId+':'+(p===14||p===15?cur:0);if(this.queryCache.has(key))return this.queryCache.get(key);const owners=this.queryOwners(p,cur),pools=this.ownerPool(type),area=this.loc(locId),result=[];for(let owner of owners)for(let u of pools.get(owner)||[])if(u.hp>0&&u.alive!==false&&this.inLoc(u,area))result.push(u);if(owners.length>1)result.sort((a,b)=>pools.order.get(a)-pools.order.get(b));this.queryCache.set(key,result);return result;}
@@ -108,7 +107,7 @@ class ScxTriggerRuntime {
       case 2:this.emit('end',{victory:false,player:cur,trigger:t.id});break;
       case 3:this.waiting.add(executionKey);break; // Preserve Trigger
       case 4:return Math.min(120000,Math.max(0,a.time));
-      case 8:this.emit('sound',{id:a.wav,source:'SCX',duration:a.time});break;
+      case 8:this.emit('sound',{id:a.wav,source:'SCX',duration:a.time,player:cur});break;
       case 9:{const message=String(this.strings[a.string]||'').replace(/[\x00-\x08\x0b-\x1f]/g,'').trim();
         if(message){const row={trigger:t.id,player:cur,id:a.string,text:message,time:this.elapsed};this.messages.push(row);if(this.messages.length>300)this.messages.shift();this.emit('message',row)}break;}
       case 10:this.emit('camera',{location:loc,point:this.center(loc)});break;
@@ -172,7 +171,7 @@ class ScxTriggerRuntime {
         if(this.pending.has(key)){ran+=this.progress(key,t,cur,this.elapsed);continue;}
         this.stats.evaluations++;
         if(t.conditions.length>0&&!t.conditions.every(c=>this.condition(c,cur)))continue;
-        this.stats.executions++;this.executed++;ran+=this.runActions(key,t,cur,0,this.elapsed);
+        if(this.callbacks.canRun?.(t,cur)===false)continue;this.stats.executions++;this.executed++;ran+=this.runActions(key,t,cur,0,this.elapsed);
       }
     }
     return ran;

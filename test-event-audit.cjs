@@ -1,0 +1,6 @@
+'use strict';
+const fs=require('node:fs'),assert=require('node:assert/strict'),{ScxTriggerRuntime}=require('./dist/scx-trigger-runtime.js');
+const data=JSON.parse(fs.readFileSync('dist/data/scx-runtime.json')),world=JSON.parse(fs.readFileSync('dist/data/world.json'));
+let conditions=0,actions=0;
+for(const trigger of data.triggers){const sim=new ScxTriggerRuntime({triggers:[],units:data.units.map(u=>({...u,hp:world.stats[u.type]?.hp||100,maxHp:world.stats[u.type]?.hp||100,alive:true})),locations:data.locations.map(l=>({...l,bounds:l.bounds.slice()})),strings:data.strings,unitProperties:data.unitProperties,unitDefaults:world.stats});for(const condition of trigger.conditions){sim.condition(condition,1);conditions++;}for(const action of trigger.actions){if(action.flags&2)continue;sim.execute(action,1,trigger,trigger.id+':1');actions++;}assert.equal(sim.stats.errors,0,'trigger '+trigger.id);assert.equal(sim.stats.unsupported,0,'trigger '+trigger.id);assert.deepEqual(sim.stats.unknownTypes,{},'trigger '+trigger.id);}
+console.log(JSON.stringify({result:'PASS',triggers:data.triggers.length,conditions,actions,scope:'isolated original condition/action compatibility; not full-story playthrough'}));
