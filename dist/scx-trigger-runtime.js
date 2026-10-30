@@ -23,7 +23,7 @@ class ScxTriggerRuntime {
       if(!this.index.has(owner))this.index.set(owner,[]);
       this.index.get(owner).push(t);
     }
-    this.runtimeKeys={};this.queryCache=new Map();this.typeIndex=null;this.liveVersion=0;
+    this.runtimeKeys={};this.ownerPools=new Map();this.queryCache=new Map();this.typeIndex=null;this.liveVersion=0;
   }
   ownersOf(t){const owners=[];for(let i=0;i<t.owners.length;i++)if(t.owners[i]===1){
     if(i<12)owners.push(i);
@@ -59,12 +59,13 @@ class ScxTriggerRuntime {
     let [left,top,right,bottom]=loc.bounds||[0,0,8192,8192];if(left>right)[left,right]=[right,left];if(top>bottom)[top,bottom]=[bottom,top];
     return u.x>=left&&u.x<=right&&u.y>=top&&u.y<=bottom;}
   loc(id){return id===64||id===0?{id,bounds:[0,0,8192,8192]}:this.locations.get(id);}
-  invalidateUnits(){this.queryCache.clear();this.liveVersion++;}
+  invalidateUnits(){this.ownerPools.clear();this.queryCache.clear();this.liveVersion++;}
   unitPool(type){if(!this.typeIndex){this.typeIndex=new Map([[228,[]],[229,[]],[230,[]],[231,[]]]);for(const u of this.units){if(u.hp<=0||u.alive===false)continue;this.indexUnit(u);}}return this.typeIndex.get(type)||[];}
   indexUnit(u){let keys=[u.type,228,BUILDINGS.has(u.type)?230:229];if(BUILDINGS.has(u.type)&&u.type>=106&&u.type<=165)keys.push(231);for(let key of keys){let a=this.typeIndex.get(key);if(!a)this.typeIndex.set(key,a=[]);a.push(u);}}
-  unitsAt(p,type,locId,cur){const key=[p,type,locId,cur].join(':');if(this.queryCache.has(key))return this.queryCache.get(key);const pool=this.unitPool(type),area=this.loc(locId);const result=pool.filter(u=>u.hp>0&&u.alive!==false&&this.belongs(u.owner,p,cur)&&this.inLoc(u,area));this.queryCache.set(key,result);return result;}
-  countUnits(p,type,locId,cur,limit){if(limit<=0)return 0;let key='count:'+p+':'+type+':'+locId+':'+cur+':'+limit;if(this.queryCache.has(key))return this.queryCache.get(key);let count=0,area=this.loc(locId),pool=this.unitPool(type),owner=p===13?cur:p;
-    for(const u of pool){if(u.hp<=0||u.alive===false)continue;if(owner<12?u.owner!==owner:!this.belongs(u.owner,p,cur))continue;if(!this.inLoc(u,area))continue;if(++count>=limit)break;}this.queryCache.set(key,count);return count;}
+  queryOwners(p,cur){if(p===13)return [cur];if(p>=0&&p<12)return [p];let result=[];for(let owner=0;owner<12;owner++)if(this.belongs(owner,p,cur))result.push(owner);return result;}
+  ownerPool(type){let owners=this.ownerPools.get(type);if(!owners){owners=new Map();owners.order=new Map();let ordinal=0;for(let u of this.unitPool(type)){owners.order.set(u,ordinal++);if(u.hp<=0||u.alive===false)continue;let list=owners.get(u.owner);if(!list)owners.set(u.owner,list=[]);list.push(u);}this.ownerPools.set(type,owners);}return owners;}
+  unitsAt(p,type,locId,cur){const key='units:'+(p===13?cur:p)+':'+type+':'+locId+':'+(p===14||p===15?cur:0);if(this.queryCache.has(key))return this.queryCache.get(key);const owners=this.queryOwners(p,cur),pools=this.ownerPool(type),area=this.loc(locId),result=[];for(let owner of owners)for(let u of pools.get(owner)||[])if(u.hp>0&&u.alive!==false&&this.inLoc(u,area))result.push(u);if(owners.length>1)result.sort((a,b)=>pools.order.get(a)-pools.order.get(b));this.queryCache.set(key,result);return result;}
+  countUnits(p,type,locId,cur,limit){if(limit<=0)return 0;return Math.min(limit,this.unitsAt(p,type,locId,cur).length);}
 
   ownedUnits(p,type,cur){return this.unitsAt(p,type,64,cur);}
   deathsAt(p,type,cur){if(p===13)return this.getVal(this.deaths,cur,type);

@@ -40,3 +40,8 @@ console.log('PASS: triggers, switches, actions, force ownership, unit movement, 
  sim.alliances.set(sim.key(1,0),2);assert(sim.belongs(0,15,1));assert(!sim.belongs(0,14,1));
  console.log('PASS: resource subtraction saturates at zero and allied victory is friendly');
 }
+{
+ const units=Array.from({length:120},(_,id)=>({id,type:[15,65,106,126][id%4],owner:id%12,x:id*7,y:id*5,hp:100,alive:true})),sim=make([],units);
+ function check(){for(const p of [0,1,6,12,13,14,15,16,17,18,19,20,26,27])for(const type of [15,65,106,126,228,229,230,231])for(const loc of [2,3,64]){const expectedUnits=units.filter(u=>u.alive!==false&&u.hp>0&&sim.belongs(u.owner,p,1)&&sim.matchesType(u,type)&&sim.inLoc(u,sim.loc(loc)));assert.deepEqual(sim.unitsAt(p,type,loc,1).map(u=>u.id),expectedUnits.map(u=>u.id));const expected=expectedUnits.length;assert.equal(sim.countUnits(p,type,loc,1,10000),expected);assert.equal(sim.countUnits(p,type,loc,1,1),Math.min(1,expected));}}
+ check();sim.alliances.set(sim.key(1,6),2);sim.invalidateUnits();check();units[0].owner=6;units[1].alive=false;units[2].x=40;units[2].y=40;sim.invalidateUnits();check();console.log('PASS: indexed owner/location queries match brute-force unit counts after ownership, movement and alliance changes');
+}
