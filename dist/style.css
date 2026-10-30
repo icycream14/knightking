@@ -4,3 +4,5 @@
 /* Floating pad replaces the fixed touch-only pad. */
 @media(pointer:coarse){#joystick{display:none}#game{touch-action:none}}
 #kk-joystick{z-index:5!important}#hud,#mission,#location,#target,#toast,#hint{pointer-events:none}#hud button{pointer-events:auto}
+
+#skillButtons{display:grid;grid-template-columns:repeat(3,1fr)}

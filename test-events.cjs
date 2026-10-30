@@ -34,3 +34,9 @@ function make(triggers,units=[]){return new ScxTriggerRuntime({triggers,units,lo
  const copy=make([t]);copy.load(sim.save());assert.equal(copy.messages.length,1);
 }
 console.log('PASS: triggers, switches, actions, force ownership, unit movement, waits and save');
+
+{
+ const sim=make([]);sim.putVal(sim.resources,1,0,5);sim.putVal(sim.resources,1,0,10,9);assert.equal(sim.getVal(sim.resources,1,0),0);
+ sim.alliances.set(sim.key(1,0),2);assert(sim.belongs(0,15,1));assert(!sim.belongs(0,14,1));
+ console.log('PASS: resource subtraction saturates at zero and allied victory is friendly');
+}

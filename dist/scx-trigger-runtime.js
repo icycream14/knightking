@@ -33,20 +33,20 @@ class ScxTriggerRuntime {
   key(p,unit){return `${p}:${unit}`;}
   getVal(table,p,unit=0){return table.get(this.key(p,unit))||0;}
   putVal(table,p,unit,value,modifier=7){const key=this.key(p,unit),old=table.get(key)||0;
-    let n=modifier===8?old+value:modifier===9?old-value:value;table.set(key,u32(n));return table.get(key);}
+    let n=modifier===8?old+value:modifier===9?old-value:value;table.set(key,clamp(n,0,4294967295));return table.get(key);}
   playersOf(group,current){
     if(group===13)return [current];
     if(group===17)return Array.from({length:12},(_,i)=>i);if(group===26)return this.activePlayers.slice();
     if(group>=18&&group<=21)return (this.forceMembers[group-18]||[]).slice();
-    if(group===14)return this.activePlayers.filter(x=>x!==current&&this.alliances.get(this.key(current,x))!==1);
-    if(group===15)return this.activePlayers.filter(x=>x!==current&&this.alliances.get(this.key(current,x))===1);
+    if(group===14)return this.activePlayers.filter(x=>x!==current&&!(this.alliances.get(this.key(current,x))>=1));
+    if(group===15)return this.activePlayers.filter(x=>x!==current&&this.alliances.get(this.key(current,x))>=1);
     if(group===16)return [11];
     if(group>=0&&group<=11)return [group];
     return [];
   }
   belongs(owner,query,current){if(query===12)return true;if(query===13)return owner===current;if(query===17)return owner>=0&&owner<=11;
-    if(query===14)return owner!==current && this.alliances.get(this.key(current,owner))!==1;
-    if(query===15)return owner!==current && this.alliances.get(this.key(current,owner))===1;
+    if(query===14)return owner!==current && !(this.alliances.get(this.key(current,owner))>=1);
+    if(query===15)return owner!==current && this.alliances.get(this.key(current,owner))>=1;
     if(query===16)return owner===11;
     if(query>=18&&query<=21)return (this.forceMembers[query-18]||[]).includes(owner);
     if(query===26)return owner<8;if(query===27)return owner>=8&&owner<=11;
@@ -182,7 +182,7 @@ class ScxTriggerRuntime {
   save(){return {elapsed:this.elapsed,countdown:this.countdown,timerRunning:this.timerRunning,switches:this.switches,deaths:[...this.deaths],resources:[...this.resources],kills:[...this.kills],scores:[...this.scores],done:[...this.done],pending:[...this.pending],waiting:[...this.waiting],messages:this.messages,nextUnitId:this.nextUnitId,vision:[...this.vision],stats:this.stats,locations:[...this.locations],doodads:[...this.doodads],alliances:[...this.alliances]};}
   load(state){if(!state)return;this.elapsed=state.elapsed||0;this.countdown=state.countdown||0;this.timerRunning=!!state.timerRunning;
     this.switches=state.switches||Array(256).fill(false);for(const table of ['deaths','resources','kills','scores'])this[table]=new Map(state[table]||[]);
-    this.done=new Set(state.done||[]);this.pending=new Map(state.pending||[]);this.waiting=new Set(state.waiting||[]);this.messages=state.messages||[];this.vision=new Map(state.vision||[]);this.nextUnitId=state.nextUnitId||this.nextUnitId;if(state.locations)this.locations=new Map(state.locations);this.doodads=new Map(state.doodads||[]);this.alliances=new Map(state.alliances||[]);this.invalidateUnits();}
+    this.done=new Set(state.done||[]);this.pending=new Map(state.pending||[]);this.waiting=new Set(state.waiting||[]);this.messages=state.messages||[];this.vision=new Map(state.vision||[]);this.nextUnitId=state.nextUnitId||this.nextUnitId;if(state.locations)this.locations=new Map(state.locations);this.typeIndex=null;this.doodads=new Map(state.doodads||[]);this.alliances=new Map(state.alliances||[]);this.invalidateUnits();}
 }
 root.ScxTriggerRuntime=ScxTriggerRuntime;
 if(typeof module!=='undefined'&&module.exports)module.exports={ScxTriggerRuntime};
